@@ -1,0 +1,120 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: auth-service-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: auth-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: envoy-proxy
+        - podSelector:
+            matchLabels:
+              app: data-service
+      ports:
+        - protocol: TCP
+          port: 5000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: data-service-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: data-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: envoy-proxy
+      ports:
+        - protocol: TCP
+          port: 5001
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 5000
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: envoy-proxy-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: envoy-proxy
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9901
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 5000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: data-service
+      ports:
+        - protocol: TCP
+          port: 5001
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

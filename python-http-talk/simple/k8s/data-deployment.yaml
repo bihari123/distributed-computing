@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: data-service
+  template:
+    metadata:
+      labels:
+        app: data-service
+    spec:
+      containers:
+        - name: data-service
+          image: data-service:v1
+          ports:
+            - containerPort: 5001
+          env:
+            - name: AUTH_SERVICE_HOST
+              value: "auth-service"
+            - name: AUTH_SERVICE_PORT
+              value: "5000"
+          volumeMounts:
+            - name: data-storage
+              mountPath: /app/data
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: data-pvc
